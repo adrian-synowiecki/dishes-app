@@ -1,6 +1,6 @@
-import { FC, useEffect } from "react";
-import { useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
+
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -16,6 +16,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 import axiosInstance from "../api/axios-instance";
 import styles from "./DishesForm.module.scss";
@@ -31,9 +32,11 @@ interface DishesFormTypes {
 
 const DishesForm: FC = () => {
   const [serviceUnavailableError, setServiceUnavailableError] = useState("");
+  const [isOpenSnackbar, setIsOpenSnackbar] = useState(false);
 
   const [datePickerValue, setDatePickerValue] = useState<Date | null>(null);
   const [preparation_time, setPreparation_time] = useState<string | null>(null);
+
   const { control, handleSubmit, setValue, formState, reset } =
     useForm<DishesFormTypes>({
       mode: "onChange",
@@ -54,6 +57,7 @@ const DishesForm: FC = () => {
       slices_of_bread: 2,
       type: "sandwich",
     };
+
     const checkServiceAvailability = async () => {
       try {
         await axiosInstance.post(`dishes`, testData);
@@ -74,23 +78,6 @@ const DishesForm: FC = () => {
     checkServiceAvailability();
   }, []);
 
-  const onSubmit: SubmitHandler<DishesFormTypes> = async (data) => {
-    const dishDetails = {
-      name: data.name,
-      type: data.dish_type,
-      no_of_slices: Number(data.no_of_slices),
-      diameter: Number(data.diameter),
-      spiciness_scale: Number(data.spiciness_scale),
-      slices_of_bread: Number(data.slices_of_bread),
-      preparation_time,
-    };
-
-    await axiosInstance.post("dishes", dishDetails);
-    setIsOpenSnackbar(true);
-    reset();
-    setDatePickerValue(null);
-  };
-
   const dish_type = useWatch({
     control,
     name: "dish_type",
@@ -100,6 +87,43 @@ const DishesForm: FC = () => {
     control,
     name: "diameter",
   });
+
+  const onSubmit: SubmitHandler<DishesFormTypes> = async (data) => {
+    let dishDetails;
+
+    if (dish_type === "pizza") {
+      dishDetails = {
+        name: data.name,
+        preparation_time,
+        type: data.dish_type,
+        no_of_slices: Number(data.no_of_slices),
+        diameter: Number(data.diameter),
+      };
+    }
+
+    if (dish_type === "soup") {
+      dishDetails = {
+        name: data.name,
+        preparation_time,
+        type: data.dish_type,
+        spiciness_scale: Number(data.spiciness_scale),
+      };
+    }
+
+    if (dish_type === "sandwich") {
+      dishDetails = {
+        name: data.name,
+        preparation_time,
+        type: data.dish_type,
+        slices_of_bread: Number(data.slices_of_bread),
+      };
+    }
+    // form is handling wrong data errors before they can reach the server
+    await axiosInstance.post("dishes", dishDetails);
+    setIsOpenSnackbar(true);
+    reset();
+    setDatePickerValue(null);
+  };
 
   const handleTimePickerChange = (new_preparation_time: Date | null) => {
     setDatePickerValue(new_preparation_time);
@@ -111,8 +135,6 @@ const DishesForm: FC = () => {
   const handleDiameterFormatChange = (diameter: string) => {
     setValue("diameter", Number(diameter).toFixed(2));
   };
-
-  const [isOpenSnackbar, setIsOpenSnackbar] = useState(false);
 
   const handleCloseSnackbar = (
     event?: React.SyntheticEvent | Event,
@@ -126,7 +148,7 @@ const DishesForm: FC = () => {
   };
 
   return (
-    <div>
+    <>
       <form className={styles.dishesForm} onSubmit={handleSubmit(onSubmit)}>
         <Controller
           name="name"
@@ -190,7 +212,7 @@ const DishesForm: FC = () => {
                   {...field}
                   InputProps={{
                     inputProps: {
-                      min: 0,
+                      min: 1,
                     },
                   }}
                 />
@@ -210,7 +232,7 @@ const DishesForm: FC = () => {
                       <InputAdornment position="start">cm</InputAdornment>
                     ),
                     inputProps: {
-                      min: 0,
+                      min: 15,
                       step: 1,
                     },
                   }}
@@ -258,25 +280,48 @@ const DishesForm: FC = () => {
                 defaultValue=""
                 id="slices_of_bread"
                 label="Slices of bread"
+                InputProps={{
+                  inputProps: {
+                    min: 1,
+                  },
+                }}
                 {...field}
               />
             )}
           />
         )}
-        
+
         {serviceUnavailableError && (
           <Alert severity="error">{serviceUnavailableError}</Alert>
         )}
 
-        <Button variant="contained" type="submit">
-          Save
-        </Button>
+        {formState.isSubmitting ? (
+          <LoadingButton
+            sx={{
+              height: 40,
+            }}
+            loading
+            variant="contained"
+          >
+            Save
+          </LoadingButton>
+        ) : (
+          <Button
+            sx={{
+              height: 40,
+            }}
+            type="submit"
+            variant="contained"
+          >
+            Save
+          </Button>
+        )}
       </form>
 
       {formState.isSubmitSuccessful && (
         <Snackbar
           open={isOpenSnackbar}
-          autoHideDuration={6000}
+          autoHideDuration={4000}
           onClose={handleCloseSnackbar}
         >
           <MuiAlert
@@ -290,7 +335,7 @@ const DishesForm: FC = () => {
           </MuiAlert>
         </Snackbar>
       )}
-    </div>
+    </>
   );
 };
 

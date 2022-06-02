@@ -3,4 +3,20 @@
   flex-direction: column;
   row-gap: 20px;
   width: 400px;
+  animation: fadein 1s;
+
+  @media only screen and (max-width: 415px) {
+    width: 250px;
+  }
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
 }
