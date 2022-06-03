@@ -119,7 +119,6 @@ const DishesForm: FC = () => {
     }
     try {
       await axiosInstance.post("dishes", dishDetails);
-      console.log(dishDetails);
     } catch (error) {
       // ui is handling wrong data errors (like missing input or wrong data format) before they can reach the server
     }
