@@ -39,7 +39,6 @@ const DishesForm: FC = () => {
 
   const { control, handleSubmit, setValue, formState, reset } =
     useForm<DishesFormTypes>({
-      mode: "onChange",
       defaultValues: {
         name: "",
         dish_type: "",
@@ -118,8 +117,13 @@ const DishesForm: FC = () => {
         slices_of_bread: Number(data.slices_of_bread),
       };
     }
-    // form is handling wrong data errors before they can reach the server
-    await axiosInstance.post("dishes", dishDetails);
+    try {
+      await axiosInstance.post("dishes", dishDetails);
+      console.log(dishDetails);
+    } catch (error) {
+      // ui is handling wrong data errors (like missing input or wrong data format) before they can reach the server
+    }
+
     setIsOpenSnackbar(true);
     reset();
     setDatePickerValue(null);
@@ -178,7 +182,7 @@ const DishesForm: FC = () => {
         </LocalizationProvider>
 
         <FormControl fullWidth variant="filled">
-          <InputLabel id="dish_typeId-label">Choose dish</InputLabel>
+          <InputLabel id="dish_typeId-label">Choose dish type</InputLabel>
           <Controller
             render={({ field }) => (
               <Select
@@ -277,7 +281,6 @@ const DishesForm: FC = () => {
               <TextField
                 required
                 type="number"
-                defaultValue=""
                 id="slices_of_bread"
                 label="Slices of bread"
                 InputProps={{
